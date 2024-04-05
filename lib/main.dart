@@ -1,156 +1,157 @@
-import 'dart:async';
-import 'dart:math';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
-void main() => runApp(SnakeGame());
+void main() {
+  runApp(CalculatorApp());
+}
 
-class SnakeGame extends StatelessWidget {
+class CalculatorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: Color(0xFF101010),
-        textTheme: TextTheme(bodyText2: TextStyle(color: Colors.white)),
+      title: 'Calculator',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+
       ),
-      home: GamePage(),
+      home: CalculatorPage(),
     );
   }
 }
 
-class GamePage extends StatefulWidget {
+class CalculatorPage extends StatefulWidget {
   @override
-  _GamePageState createState() => _GamePageState();
+  _CalculatorPageState createState() => _CalculatorPageState();
 }
 
-class _GamePageState extends State<GamePage> {
-  final int squaresPerRow = 20;
-  final int squaresPerCol = 40;
-  final randomGen = Random();
-  List<Point> snake = [Point(5, 5)];
-  Point direction = Point(1, 0);
-  Point? food;
-  bool isPlaying = false;
+class _CalculatorPageState extends State<CalculatorPage> {
+  String _output = '0';
+  String _operand = '';
+  double _num1 = 0.0;
+  double _num2 = 0.0;
 
-  void startGame() {
-    snake = [Point(5, 5)];
-    direction = Point(1, 0);
-    isPlaying = true;
-    food = Point(randomGen.nextInt(squaresPerRow), randomGen.nextInt(squaresPerCol));
-
-    Timer.periodic(Duration(milliseconds: 300), (Timer timer) {
-      moveSnake();
-      if (checkGameOver()) {
-        timer.cancel();
-        endGame();
+  void buttonPressed(String buttonText) {
+    if (buttonText == 'CLEAR') {
+      _output = '0';
+      _operand = '';
+      _num1 = 0.0;
+      _num2 = 0.0;
+    } else if (buttonText == '+' || buttonText == '-' || buttonText == '×' || buttonText == '÷') {
+      _num1 = double.parse(_output);
+      _operand = buttonText;
+      _output = '0';
+    } else if (buttonText == '.') {
+      if (!_output.contains('.')) {
+        _output += buttonText;
       }
-    });
-  }
-
-  void moveSnake() {
-    setState(() {
-      final newHead = snake.first + direction;
-      snake.insert(0, newHead);
-      if (newHead == food) {
-        food = Point(randomGen.nextInt(squaresPerRow), randomGen.nextInt(squaresPerCol));
+    } else if (buttonText == '=') {
+      _num2 = double.parse(_output);
+      switch (_operand) {
+        case '+':
+          _output = (_num1 + _num2).toString();
+          break;
+        case '-':
+          _output = (_num1 - _num2).toString();
+          break;
+        case '×':
+          _output = (_num1 * _num2).toString();
+          break;
+        case '÷':
+          _output = (_num1 / _num2).toString();
+          break;
+      }
+      _operand = '';
+    } else {
+      if (_output == '0') {
+        _output = buttonText;
       } else {
-        snake.removeLast();
+        _output += buttonText;
       }
-    });
+    }
+
+    setState(() {});
   }
 
-  bool checkGameOver() {
-    return !isPlaying ||
-        snake.first.x < 0 ||
-        snake.first.x >= squaresPerRow ||
-        snake.first.y < 0 ||
-        snake.first.y >= squaresPerCol ||
-        snake.skip(1).contains(snake.first);
-  }
-
-  void endGame() {
-    isPlaying = false;
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Game Over'),
-          content: Text('Your game is over, but you can always start over.'),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Close'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+  Widget buildButton(String buttonText) {
+    return Expanded(
+      child: TextButton(
+        onPressed: () => buttonPressed(buttonText),
+        child: Text(
+          buttonText,
+          style: TextStyle(fontSize: 20.0),
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GestureDetector(
-        onVerticalDragUpdate: (details) {
-          if (direction != Point(0, 1) && details.delta.dy > 0) {
-            direction = Point(0, 1);
-          } else if (direction != Point(0, -1) && details.delta.dy < 0) {
-            direction = Point(0, -1);
-          }
-        },
-        onHorizontalDragUpdate: (details) {
-          if (direction != Point(1, 0) && details.delta.dx > 0) {
-            direction = Point(1, 0);
-          } else if (direction != Point(-1, 0) && details.delta.dx < 0) {
-            direction = Point(-1, 0);
-          }
-        },
-        child: GridView.builder(
-          itemCount: squaresPerRow * squaresPerCol,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: squaresPerRow,
-          ),
-          itemBuilder: (BuildContext context, int index) {
-            var color;
-            var x = index % squaresPerRow;
-            var y = index ~/ squaresPerRow;
-
-            bool isSnakeBody = snake.contains(Point(x, y));
-            bool isSnakeHead = snake.first == Point(x, y);
-            bool isFood = food == Point(x, y);
-
-            if (isSnakeHead) {
-              color = Colors.green[700];
-            } else if (isSnakeBody) {
-              color = Colors.green[500];
-            } else if (isFood) {
-              color = Colors.red[500];
-            } else {
-              color = Colors.grey[900];
-            }
-
-            return Container(
-              margin: EdgeInsets.all(1),
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.rectangle,
-              ),
-            );
-          },
-        ),
+      appBar: AppBar(
+        title: Text('Calculator'),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: startGame,
-        child: Icon(Icons.play_arrow),
+      body: Container(
+        color: Colors.white70,
+        child: Column(
+          children: <Widget>[
+            Container(
+              alignment: Alignment.centerRight,
+              padding: EdgeInsets.symmetric(vertical: 24.0, horizontal: 12.0),
+              child: Text(
+                _output,
+                style: TextStyle(fontSize: 48.0, fontWeight: FontWeight.bold),
+              ),
+            ),
+            Expanded(
+              child: Divider(),
+            ),
+            Column(
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    buildButton('7'),
+                    buildButton('8'),
+                    buildButton('9'),
+                    buildButton('÷'),
+                  ],
+                ),
+                Row(
+                  children: <Widget>[
+                    buildButton('4'),
+                    buildButton('5'),
+                    buildButton('6'),
+                    buildButton('×'),
+                  ],
+                ),
+                Row(
+                  children: <Widget>[
+                    buildButton('1'),
+                    buildButton('2'),
+                    buildButton('3'),
+                    buildButton('-'),
+                  ],
+                ),
+                Row(
+                  children: <Widget>[
+                    buildButton('.'),
+                    buildButton('0'),
+                    buildButton('CLEAR'),
+                    buildButton('+'),
+                  ],
+                ),
+                Row(
+                  children: <Widget>[
+                    buildButton('='),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-extension on Point {
-  Point operator +(Point other) {
-    return Point(x + other.x, y + other.y);
-  }
-}
